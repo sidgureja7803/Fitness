@@ -6,19 +6,22 @@ let cachedDb: Db | null = null;
 export async function getDatabase(): Promise<Db> {
   if (cachedDb) return cachedDb;
 
-  const uri = process.env.MONGODB_URI ?? process.env.MONGODB_URL;
+  const uri =
+    process.env.MONGODB_URI || process.env.MONGODB_URL;
+
   if (!uri) {
     throw new Error(
-      "Missing MONGODB_URI. Example:\nMONGODB_URI=mongodb+srv://<user>:<pwd>@cluster.mongodb.net/FitnessApp"
+      "Missing MongoDB connection string. Set MONGODB_URI in environment variables."
     );
   }
+
+  const dbName = process.env.MONGODB_DB_NAME || "fitness_app";
 
   if (!cachedClient) {
     cachedClient = new MongoClient(uri);
     await cachedClient.connect();
   }
 
-  // Select FitnessApp database
-  cachedDb = cachedClient.db("FitnessApp");
+  cachedDb = cachedClient.db(dbName);
   return cachedDb;
 }

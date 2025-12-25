@@ -1,5 +1,3 @@
-// AI Fitness App/app/fitness-input/page.tsx
-
 'use client';
 
 import { useState } from 'react';
@@ -20,6 +18,7 @@ import { Loader2 } from 'lucide-react';
 export default function FitnessInputPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     age: '',
@@ -38,59 +37,65 @@ export default function FitnessInputPage() {
     setLoading(true);
 
     try {
-      // Save user data to MongoDB via Next.js API
-      const saveRes = await fetch("/api/save-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      /* ======================
+         1️⃣ SAVE USER
+      ====================== */
+      const saveRes = await fetch('/api/save-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
       const saveData = await saveRes.json();
 
-      if (!saveRes.ok || !saveData.insertedId) {
-        const message = saveData?.error || "Failed to save user data";
-        alert(message);
-        setLoading(false);
+      if (!saveRes.ok || !saveData.userId) {
+        alert(saveData?.error || 'Failed to save user');
         return;
       }
 
-      const userId = saveData.insertedId;
+      const userId = saveData.userId;
 
-      // Generate plan using Gemini API via Next.js API
-      const planRes = await fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+      /* ======================
+         2️⃣ GENERATE PLAN
+         (Send FULL DATA + userId)
+      ====================== */
+      const planRes = await fetch('/api/generate-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          ...formData,
+        }),
       });
 
       const planData = await planRes.json();
 
       if (!planRes.ok || !planData.success) {
-        const message = planData?.error || "Failed to generate plan";
-        alert(message);
-        setLoading(false);
+        alert(planData?.error || 'Failed to generate plan');
         return;
       }
 
-      // Navigate to results with the userId
+      /* ======================
+         3️⃣ REDIRECT TO RESULTS
+      ====================== */
       router.push(`/results?user=${userId}`);
     } catch (err) {
       console.error(err);
-      alert("An unexpected error occurred. Please try again.");
+      alert('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Enter Your Fitness Details</h1>
+          <h1 className="text-4xl font-bold mb-4">
+            Enter Your Fitness Details
+          </h1>
           <p className="text-muted-foreground">
-            Provide your information to receive a personalized fitness and
-            nutrition plan
+            Get a personalized workout & diet plan powered by AI
           </p>
         </div>
 
@@ -98,13 +103,12 @@ export default function FitnessInputPage() {
           onSubmit={handleSubmit}
           className="bg-card border rounded-lg p-8 space-y-6"
         >
+          {/* Name & Age */}
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+            <div>
+              <Label>Name *</Label>
               <Input
-                id="name"
                 required
-                placeholder="John Doe"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -112,13 +116,11 @@ export default function FitnessInputPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="age">Age *</Label>
+            <div>
+              <Label>Age *</Label>
               <Input
-                id="age"
                 type="number"
                 required
-                placeholder="25"
                 value={formData.age}
                 onChange={(e) =>
                   setFormData({ ...formData, age: e.target.value })
@@ -127,159 +129,133 @@ export default function FitnessInputPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="gender">Gender *</Label>
-            <Select
-              required
-              onValueChange={(value) =>
-                setFormData({ ...formData, gender: value })
-              }
-            >
-              <SelectTrigger id="gender">
-                <SelectValue placeholder="Select gender" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">Male</SelectItem>
-                <SelectItem value="female">Female</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Gender */}
+          <Select
+            required
+            onValueChange={(v) =>
+              setFormData({ ...formData, gender: v })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select gender" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Male">Male</SelectItem>
+              <SelectItem value="Female">Female</SelectItem>
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
 
+          {/* Height & Weight */}
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="height">Height (cm) *</Label>
-              <Input
-                id="height"
-                type="number"
-                required
-                placeholder="175"
-                value={formData.height}
-                onChange={(e) =>
-                  setFormData({ ...formData, height: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg) *</Label>
-              <Input
-                id="weight"
-                type="number"
-                required
-                placeholder="70"
-                value={formData.weight}
-                onChange={(e) =>
-                  setFormData({ ...formData, weight: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fitnessGoal">Fitness Goal *</Label>
-            <Select
+            <Input
+              type="number"
+              placeholder="Height (cm)"
               required
-              onValueChange={(value) =>
-                setFormData({ ...formData, fitnessGoal: value })
-              }
-            >
-              <SelectTrigger id="fitnessGoal">
-                <SelectValue placeholder="Select your goal" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="weight-loss">Weight Loss</SelectItem>
-                <SelectItem value="muscle-gain">Muscle Gain</SelectItem>
-                <SelectItem value="endurance">Endurance</SelectItem>
-                <SelectItem value="general-fitness">
-                  General Fitness
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fitnessLevel">Fitness Level *</Label>
-            <Select
-              required
-              onValueChange={(value) =>
-                setFormData({ ...formData, fitnessLevel: value })
-              }
-            >
-              <SelectTrigger id="fitnessLevel">
-                <SelectValue placeholder="Select your fitness level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="beginner">Beginner</SelectItem>
-                <SelectItem value="intermediate">Intermediate</SelectItem>
-                <SelectItem value="advanced">Advanced</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="workoutLocation">Workout Location *</Label>
-            <Select
-              required
-              onValueChange={(value) =>
-                setFormData({ ...formData, workoutLocation: value })
-              }
-            >
-              <SelectTrigger id="workoutLocation">
-                <SelectValue placeholder="Select workout location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="home">Home</SelectItem>
-                <SelectItem value="gym">Gym</SelectItem>
-                <SelectItem value="outdoor">Outdoor</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="dietaryPreference">Dietary Preference *</Label>
-            <Select
-              required
-              onValueChange={(value) =>
-                setFormData({ ...formData, dietaryPreference: value })
-              }
-            >
-              <SelectTrigger id="dietaryPreference">
-                <SelectValue placeholder="Select dietary preference" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="veg">Vegetarian</SelectItem>
-                <SelectItem value="non-veg">Non-Vegetarian</SelectItem>
-                <SelectItem value="vegan">Vegan</SelectItem>
-                <SelectItem value="keto">Keto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="medicalHistory">
-              Medical History / Notes (Optional)
-            </Label>
-            <Textarea
-              id="medicalHistory"
-              placeholder="Any injuries, medical conditions, or other important notes..."
-              rows={4}
-              value={formData.medicalHistory}
+              value={formData.height}
               onChange={(e) =>
-                setFormData({ ...formData, medicalHistory: e.target.value })
+                setFormData({ ...formData, height: e.target.value })
+              }
+            />
+            <Input
+              type="number"
+              placeholder="Weight (kg)"
+              required
+              value={formData.weight}
+              onChange={(e) =>
+                setFormData({ ...formData, weight: e.target.value })
               }
             />
           </div>
 
-          <Button
-            type="submit"
-            className="w-full text-lg py-6"
-            disabled={loading}
+          {/* Fitness Goal */}
+          <Select
+            required
+            onValueChange={(v) =>
+              setFormData({ ...formData, fitnessGoal: v })
+            }
           >
+            <SelectTrigger>
+              <SelectValue placeholder="Fitness goal" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Muscle Gain">Muscle Gain</SelectItem>
+              <SelectItem value="Weight Loss">Weight Loss</SelectItem>
+              <SelectItem value="General Fitness">
+                General Fitness
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Fitness Level */}
+          <Select
+            required
+            onValueChange={(v) =>
+              setFormData({ ...formData, fitnessLevel: v })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Fitness level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Beginner">Beginner</SelectItem>
+              <SelectItem value="Intermediate">Intermediate</SelectItem>
+              <SelectItem value="Advanced">Advanced</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Workout Location */}
+          <Select
+            required
+            onValueChange={(v) =>
+              setFormData({ ...formData, workoutLocation: v })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Workout location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Gym">Gym</SelectItem>
+              <SelectItem value="Home">Home</SelectItem>
+              <SelectItem value="Outdoor">Outdoor</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Diet Preference */}
+          <Select
+            required
+            onValueChange={(v) =>
+              setFormData({ ...formData, dietaryPreference: v })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Diet preference" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Veg">Vegetarian</SelectItem>
+              <SelectItem value="Non-Veg">Non-Vegetarian</SelectItem>
+              <SelectItem value="Vegan">Vegan</SelectItem>
+              <SelectItem value="Keto">Keto</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Medical History */}
+          <Textarea
+            placeholder="Medical history (optional)"
+            value={formData.medicalHistory}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                medicalHistory: e.target.value,
+              })
+            }
+          />
+
+          <Button type="submit" disabled={loading} className="w-full py-6">
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Generating Your Plan...
+                Generating Plan...
               </>
             ) : (
               'Generate Plan'

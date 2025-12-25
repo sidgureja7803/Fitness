@@ -8,14 +8,16 @@ import Footer from '@/components/footer';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'AI Fitness Coach',
-  description: 'Your Personal AI-Powered Fitness and Diet Planner',
+  title: 'AI Gym Assistant',
+  description: 'AI-powered fitness and nutrition planning tailored for you',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-dumbbell.svg', type: 'image/svg+xml' }
+      { url: '/favicon-dumbbell.svg', type: 'image/svg+xml' },
     ],
   },
+  authors: [{ name: 'Rishabh Dhawan' }],
+  creator: 'Rishabh Dhawan',
 };
 
 export default function RootLayout({
@@ -28,11 +30,11 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"   
+          enableSystem={false}   
           disableTransitionOnChange
         >
-          <div className="flex flex-col min-h-screen">
+          <div className="flex min-h-screen flex-col">
             <Navbar />
             <main className="flex-1">{children}</main>
             <Footer />

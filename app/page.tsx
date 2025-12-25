@@ -5,33 +5,37 @@ import { Dumbbell, Target, TrendingUp } from 'lucide-react';
 export default function Home() {
   return (
     <div className="container mx-auto px-4 py-16">
+      {/* Hero Section */}
       <section className="text-center mb-16">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 text-foreground">
-            Your Personal AI Fitness Coach
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            AI Gym Assistant
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed">
-            Transform your fitness journey with personalized workout plans and
-            nutrition guidance powered by artificial intelligence. Achieve your
-            goals with science-backed recommendations tailored to your needs.
+            A smart AI-powered fitness and nutrition assistant that creates
+            personalized workout routines and diet plans based on your goals,
+            lifestyle, and preferences.
           </p>
           <Link href="/fitness-input">
             <Button size="lg" className="text-lg px-8 py-6">
-              Get Started
+              Build My Fitness Plan
             </Button>
           </Link>
         </div>
       </section>
 
+      {/* Features Section */}
       <section className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
         <div className="text-center p-6 rounded-lg border bg-card">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <Dumbbell className="w-8 h-8 text-primary" />
           </div>
-          <h3 className="text-xl font-semibold mb-3">Custom Workouts</h3>
+          <h3 className="text-xl font-semibold mb-3">
+            Personalized Workouts
+          </h3>
           <p className="text-muted-foreground">
-            Get workout plans designed specifically for your fitness level,
-            goals, and available equipment.
+            AI-generated workout plans tailored to your fitness level,
+            workout location, and long-term goals.
           </p>
         </div>
 
@@ -39,10 +43,12 @@ export default function Home() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <Target className="w-8 h-8 text-primary" />
           </div>
-          <h3 className="text-xl font-semibold mb-3">Nutrition Plans</h3>
+          <h3 className="text-xl font-semibold mb-3">
+            Smart Nutrition Guidance
+          </h3>
           <p className="text-muted-foreground">
-            Receive personalized meal plans that align with your dietary
-            preferences and fitness objectives.
+            Customized diet plans aligned with your dietary preferences,
+            calorie needs, and fitness objectives.
           </p>
         </div>
 
@@ -50,10 +56,12 @@ export default function Home() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <TrendingUp className="w-8 h-8 text-primary" />
           </div>
-          <h3 className="text-xl font-semibold mb-3">Track Progress</h3>
+          <h3 className="text-xl font-semibold mb-3">
+            Continuous Improvement
+          </h3>
           <p className="text-muted-foreground">
-            Monitor your improvements and adjust your plans as you reach new
-            milestones in your fitness journey.
+            Regenerate plans as you progress and adapt your fitness strategy
+            based on performance and consistency.
           </p>
         </div>
       </section>

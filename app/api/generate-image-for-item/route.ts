@@ -1,13 +1,21 @@
 export const dynamic = "force-dynamic";
-import { NextRequest, NextResponse } from "next/server";
-// Do not write to disk on serverless platforms (Vercel). We'll return base64 directly.
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+import { NextRequest, NextResponse } from "next/server";
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
+const GEMINI_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { item, type } = body;
+    if (!GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: "Gemini API key missing" },
+        { status: 500 }
+      );
+    }
+
+    const { item, type } = await req.json();
 
     if (!item || !type) {
       return NextResponse.json(
@@ -16,87 +24,85 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!GEMINI_API_KEY) {
-      return NextResponse.json(
-        { error: "Gemini API key not configured" },
-        { status: 500 }
-      );
-    }
+    const prompt =
+      type === "exercise"
+        ? `
+Generate a highly detailed image description for a fitness exercise.
 
-    // Create a detailed prompt for image generation
-    const prompt = type === "exercise"
-      ? `Generate a high-quality, professional photograph of a fit person demonstrating the proper form for ${item} exercise in a modern gym. Good lighting, clear demonstration of technique, fitness photography style, 4K quality, detailed.`
-      : `Generate a professional, appetizing food photography shot of ${item}, beautifully plated on a clean white dish, natural lighting, restaurant quality, high resolution, detailed, vibrant colors.`;
+Exercise: ${item}
 
-    // Use Gemini 2.0 Flash with image generation capability
-    const model = 'gemini-2.0-flash-exp';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+Describe:
+- Body posture
+- Muscle engagement
+- Gym environment
+- Camera angle
+- Lighting
+- Professional fitness photography style
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+Return ONLY a single-paragraph description.
+`
+        : `
+Generate a highly detailed food photography description.
+
+Food item: ${item}
+
+Describe:
+- Plating style
+- Ingredients visibility
+- Lighting
+- Camera angle
+- Restaurant-quality presentation
+
+Return ONLY a single-paragraph description.
+`;
+
+    const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{
-          role: "user",
-          parts: [{
-            text: prompt
-          }]
-        }],
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
         generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"]
-        }
+          temperature: 0.6,
+          maxOutputTokens: 512,
+        },
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Gemini image generation error: ${response.status} - ${errorText}`);
+      const err = await response.text();
+      console.error("Gemini error:", err);
       return NextResponse.json(
-        { error: `Gemini API error: ${response.status}` },
-        { status: response.status }
-      );
-    }
-
-    // Parse the JSON response
-    const result = await response.json();
-
-    // Extract image data from response
-    const candidates = result.candidates;
-    if (!candidates || !candidates[0] || !candidates[0].content || !candidates[0].content.parts) {
-      return NextResponse.json(
-        { error: "No image data in response" },
+        { error: "Gemini API failed" },
         { status: 500 }
       );
     }
 
-    const parts = candidates[0].content.parts;
-    let imageUrl = null;
+    const data = await response.json();
+    const description =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    // Look for inline image data. Instead of saving to disk (not allowed on Vercel serverless),
-    // return the base64 payload to the client so it can preview the image directly.
-    for (const part of parts) {
-      if (part.inlineData && part.inlineData.data) {
-        const base64 = part.inlineData.data;
-        const mime = part.inlineData.mimeType || 'image/png';
-
-        return NextResponse.json({
-          success: true,
-          image_base64: base64,
-          mime_type: mime,
-        });
-      }
+    if (!description) {
+      return NextResponse.json(
+        { error: "No description generated" },
+        { status: 500 }
+      );
     }
 
+    return NextResponse.json({
+      success: true,
+      image_prompt: description,
+      item,
+      type,
+    });
+  } catch (error: any) {
+    console.error("Generate image prompt error:", error);
     return NextResponse.json(
-      { error: "No image generated" },
-      { status: 500 }
-    );
-  } catch (err: any) {
-    console.error("Error in /api/generate-image-for-item:", err);
-    return NextResponse.json(
-      { error: `Internal server error: ${err.message || err}` },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

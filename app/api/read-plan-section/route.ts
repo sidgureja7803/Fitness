@@ -1,31 +1,40 @@
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs"; // ✅ force Node (Buffer safe)
+
 import { NextRequest, NextResponse } from "next/server";
-import { ELEVENLABS_CONFIG } from "@/lib/gemini-config";
+
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY!;
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM"; // default voice
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { text } = body;
+    if (!ELEVENLABS_API_KEY) {
+      return NextResponse.json(
+        { error: "ElevenLabs API key missing" },
+        { status: 500 }
+      );
+    }
 
-    if (!text) {
+    const { text } = await req.json();
+
+    if (!text || typeof text !== "string") {
       return NextResponse.json(
         { error: "text is required" },
         { status: 400 }
       );
     }
 
-    // Call ElevenLabs TTS API for reliable audio
     const response = await fetch(
-      `${ELEVENLABS_CONFIG.baseUrl}/text-to-speech/${ELEVENLABS_CONFIG.voiceId}`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
       {
         method: "POST",
         headers: {
-          "Accept": "audio/mpeg",
+          Accept: "audio/mpeg",
           "Content-Type": "application/json",
-          "xi-api-key": ELEVENLABS_CONFIG.apiKey,
+          "xi-api-key": ELEVENLABS_API_KEY,
         },
         body: JSON.stringify({
-          text: text,
+          text,
           model_id: "eleven_monolingual_v1",
           voice_settings: {
             stability: 0.5,
@@ -36,27 +45,26 @@ export async function POST(req: NextRequest) {
     );
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error("ElevenLabs TTS API error:", errorData);
+      const err = await response.text();
+      console.error("ElevenLabs error:", err);
       return NextResponse.json(
-        { error: "Failed to generate audio from ElevenLabs TTS API" },
-        { status: response.status }
+        { error: "Failed to generate speech" },
+        { status: 500 }
       );
     }
 
-    // Convert audio buffer to base64
     const audioBuffer = await response.arrayBuffer();
-    const base64Audio = Buffer.from(audioBuffer).toString('base64');
+    const base64Audio = Buffer.from(audioBuffer).toString("base64");
 
     return NextResponse.json({
       success: true,
       audio_base64: base64Audio,
       mime_type: "audio/mpeg",
     });
-  } catch (err: any) {
-    console.error("Error in /api/read-plan-section:", err);
+  } catch (error: any) {
+    console.error("read-plan-section error:", error);
     return NextResponse.json(
-      { error: `Internal server error: ${err.message || err}` },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
