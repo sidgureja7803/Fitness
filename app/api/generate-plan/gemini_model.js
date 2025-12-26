@@ -2,7 +2,7 @@ const API_KEY = process.env.GEMINI_API_KEY;
 
 async function listModels() {
   const res = await fetch(
-    `https://generativeai.googleapis.com/v1/models?key=${API_KEY}`
+    `https://generativelanguage.googleapis.com/v1/models?key=${API_KEY}`
   );
 
   const data = await res.json();

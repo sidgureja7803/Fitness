@@ -1,13 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: NextRequest) {
   try {
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    
     if (!GEMINI_API_KEY) {
       return NextResponse.json(
         { error: "Gemini API key missing" },
@@ -56,35 +55,14 @@ Describe:
 Return ONLY a single-paragraph description.
 `;
 
-    const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 512,
-        },
-      }),
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("Gemini error:", err);
-      return NextResponse.json(
-        { error: "Gemini API failed" },
-        { status: 500 }
-      );
-    }
-
-    const data = await response.json();
-    const description =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const description = response.text;
 
     if (!description) {
       return NextResponse.json(

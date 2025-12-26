@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
+import { getDatabase } from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 export const runtime = "nodejs";
 
@@ -10,6 +13,14 @@ export async function POST(req: NextRequest) {
     if (!body.age || !body.gender || !body.weight || !body.fitnessGoal) {
       return NextResponse.json(
         { error: "Missing required user fields" },
+        { status: 400 }
+      );
+    }
+
+    // Validate userId if provided
+    if (body.userId && !ObjectId.isValid(body.userId)) {
+      return NextResponse.json(
+        { error: "Invalid userId format" },
         { status: 400 }
       );
     }
@@ -63,38 +74,16 @@ JSON FORMAT:
 }
 `;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
-    const data = await response.json();
+    console.log("🔍 GEMINI RAW RESPONSE:", JSON.stringify(response, null, 2));
 
-    console.log("🔍 GEMINI RAW RESPONSE:", JSON.stringify(data, null, 2));
-
-    if (data.error) {
-      return NextResponse.json(
-        { error: data.error.message },
-        { status: 500 }
-      );
-    }
-
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = response.text;
 
     if (!text) {
       return NextResponse.json(
@@ -111,6 +100,17 @@ JSON FORMAT:
         { error: "Gemini response was not valid JSON" },
         { status: 500 }
       );
+    }
+
+    // Save plan to MongoDB if userId is provided
+    if (body.userId) {
+      const db = await getDatabase();
+      await db.collection("plans").insertOne({
+        userId: new ObjectId(body.userId),
+        plan,
+        createdAt: new Date(),
+      });
+      console.log("✅ Plan saved to MongoDB for userId:", body.userId);
     }
 
     return NextResponse.json({
